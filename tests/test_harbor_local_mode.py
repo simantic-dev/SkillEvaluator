@@ -1678,6 +1678,16 @@ def test_runtime_injection_env_is_blocked_before_launcher(name: str, tmp_path: P
     assert name in (result.stderr or "")
 
 
+@pytest.mark.parametrize("name", ["BASH_ENV", "ENV", "NODE_OPTIONS", "PYTHONPATH"])
+@pytest.mark.skipif(os.name == "nt", reason=_NATIVE_WINDOWS_LOCAL_REASON)
+def test_empty_loader_env_reset_is_not_blocked(name: str, tmp_path: Path) -> None:
+    """The adapter writes ``BASH_ENV=""`` etc. into every staged task.toml as a
+    loader reset; local mode must not reject its own reset by name."""
+    environment = _local_environment(tmp_path)
+    filtered = environment._filter_command_env({name: "", "KEEP": "1"}, protected=set())
+    assert filtered == {"KEEP": "1"}
+
+
 @pytest.mark.skipif(os.name == "nt", reason=_NATIVE_WINDOWS_LOCAL_REASON)
 def test_persistent_runtime_injection_env_is_blocked_before_launcher(tmp_path: Path) -> None:
     environment = _local_environment(tmp_path, persistent_env={"NODE_OPTIONS": "--require=/tmp/attack.js"})

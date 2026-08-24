@@ -996,6 +996,11 @@ class SkillEvaluatorLocalEnvironment(BaseEnvironment):
         for key, value in env.items():
             normalized = key.upper()
             if normalized in _BLOCKED_COMMAND_ENV_NAMES or normalized.startswith(_BLOCKED_COMMAND_ENV_PREFIXES):
+                if value == "":
+                    # The evaluator's own loader reset: adapter._EVALUATOR_MANAGED_RUNTIME_ENV
+                    # writes BASH_ENV="" (etc.) into every staged task.toml. Clearing a
+                    # loader variable cannot run code; only a non-empty value can.
+                    continue
                 raise ValueError(
                     f"environment variable {key} can execute or alter code before confinement and is not allowed"
                 )
