@@ -169,6 +169,9 @@ _HARBOR_ENV_MODE_VARS = {
             "DAYTONA_TARGET",
         }
     ),
+    # Apple `container` picks the image platform from this variable; on Apple
+    # silicon it is how an amd64-only task image is built and run (via Rosetta).
+    "apple-container": frozenset({"CONTAINER_DEFAULT_PLATFORM"}),
     "e2b": frozenset({"E2B_API_KEY"}),
     "modal": frozenset({"MODAL_ENVIRONMENT", "MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET"}),
     "runloop": frozenset({"RUNLOOP_API_KEY"}),
