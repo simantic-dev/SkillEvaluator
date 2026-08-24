@@ -1471,7 +1471,9 @@ def _constituent_default_reward_failure(result: dict[str, Any]) -> str:
         return "Authoritative verifier reward is failed; it was not scored"
 
     step_results = result.get("step_results")
-    if "step_results" in result and not isinstance(step_results, list):
+    # Harbor 0.13.x writes ``"step_results": null`` for single-step tasks; that is
+    # "no constituent steps", not a malformed list.
+    if "step_results" in result and step_results is not None and not isinstance(step_results, list):
         return "Authoritative verifier result has malformed constituent steps; it was not scored"
     if not isinstance(step_results, list):
         return ""
