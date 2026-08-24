@@ -562,10 +562,10 @@ def _validate_agent_provider_credentials(
                 ]
 
         if provider.provider in {"openai", "openai-compatible"} and "claude-code" in agents:
-            if not agent_runtime_env.get("ANTHROPIC_API_KEY", "").strip():
+            if not _has_anthropic_agent_credential(agent_runtime_env):
                 return [
                     "claude-code with the OpenAI evaluator provider requires an independent ANTHROPIC_API_KEY "
-                    "in the operator host environment."
+                    "or CLAUDE_CODE_OAUTH_TOKEN in the operator host environment."
                 ]
             if model_sources.get("claude-code", "public provider default") == "public provider default":
                 return [
@@ -628,7 +628,7 @@ def _validate_agent_provider_credentials(
         return []
 
     if "claude-code" in agents:
-        if not agent_runtime_env.get("ANTHROPIC_API_KEY", "").strip():
+        if not _has_anthropic_agent_credential(agent_runtime_env):
             return [
                 "claude-code with NVIDIA Build requires an independent ANTHROPIC_API_KEY in the agent runtime "
                 "environment; NVIDIA_API_KEY is not an Anthropic credential."
@@ -837,10 +837,23 @@ def _harbor_subprocess_environment(
     return environment
 
 
+def _has_anthropic_agent_credential(agent_runtime_env: Mapping[str, str]) -> bool:
+    """An API key or a Claude Code subscription OAuth token."""
+    return bool(
+        agent_runtime_env.get("ANTHROPIC_API_KEY", "").strip()
+        or agent_runtime_env.get("CLAUDE_CODE_OAUTH_TOKEN", "").strip()
+    )
+
+
 def _independent_anthropic_agent_credentials() -> dict[str, str]:
     """Resolve and validate a host-owned Anthropic credential pair."""
+    # CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`) is the subscription
+    # credential Harbor's Claude Code agent already understands; CLAUDE_FORCE_OAUTH
+    # tells it to prefer that token when an API key is also present.
     credentials = {
-        name: os.environ.get(name, "") for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL") if os.environ.get(name)
+        name: os.environ.get(name, "")
+        for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_FORCE_OAUTH")
+        if os.environ.get(name)
     }
     if base_url := credentials.get("ANTHROPIC_BASE_URL"):
         normalized_base_url = _normalize_anthropic_base_url(
